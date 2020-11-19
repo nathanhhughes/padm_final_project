@@ -1,0 +1,5 @@
+wheel
+jupyter
+jupytext
+networkx
+pandas
