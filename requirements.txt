@@ -1,3 +1,5 @@
 wheel
 networkx
+matplotlib
 pandas
+pytest
