@@ -1,3 +1,3 @@
-## 16.413 final project repo
+## 16.413 final project supporting code
 
-*Quick note*: [jupytext](https://github.com/mwouts/jupytext) solves a lot of problems when collaborating on a jupyter notebook in git (namely messy diffs and merge conflicts with the notebook output). The project is going to be linked with a python file in the `light` format, but you can still make edits to the notebook and commit them as is without jupytext.  Whoever is using jupytext needs to be careful to check what they're pulling to make sure that they copy changes from the actual notebook into `light` format version of the notebook before making any modifications.
+Both files intended to used by google colab instance.
