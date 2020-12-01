@@ -1,5 +1,5 @@
 """Tests around making a network."""
-from ..network_utils import generate_network
+from padm_final_project.network_utils import generate_network
 
 
 def test_generate_network_basic():
