@@ -1,5 +1,6 @@
 """Module containing the BayesNet class."""
 import networkx as nx
+import pygraphviz as pgv
 
 
 class BayesNet:
@@ -93,11 +94,11 @@ class BayesNet:
 
         Parameters:
             o_nodes: a list of string names for observation nodes
-            attach_nodes: a list of string names for attack nodes
+            attack_nodes: a list of string names for attack nodes
         """
         raise NotImplementedError()
 
-    def draw_net(self):
+    def draw_net(self, ax=None):
         """Draw a diagram of the network."""
         nx.draw(
             self.graph,
@@ -105,4 +106,39 @@ class BayesNet:
             pos=nx.get_node_attributes(self.graph, "pos"),
             node_color="orange",
             node_size=500,
+            ax=ax,
+            labels=fake_labels,
         )
+
+    def draw_cpt_diagram(self, rank_labels=["a", "s", "w"]):
+        """
+        Draw the graph (but have CPTs as labels).
+
+        Args:
+            rank_labels (List[str]): Labels to place on the same rank in the graph
+
+        Returns:
+            bytes: Rendered PNG of graph
+        """
+        dot_graph = pgv.AGraph(strict=True, directed=True)
+        for key in rank_labels:
+            dot_graph.add_subgraph(name=key, rank="same")
+
+        key_to_subgraph = {
+            subgraph.name: subgraph for subgraph in dot_graph.subgraphs()
+        }
+
+        for node_key, node in self.nodes.items():
+            if node_key[0] in key_to_subgraph:
+                key_to_subgraph[node_key[0]].add_node(node_key)
+            else:
+                dot_graph.add_node(node_key)
+
+            cpt_node = dot_graph.get_node(node_key)
+            cpt_node.attr["shape"] = "oval"
+            cpt_node.attr["label"] = node.get_html_cpt()
+
+        for edge in self.graph.edges:
+            dot_graph.add_edge(*edge)
+
+        return dot_graph.draw(format="png", prog="dot")

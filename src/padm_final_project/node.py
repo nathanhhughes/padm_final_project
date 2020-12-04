@@ -75,3 +75,31 @@ class Node:
             + str(self.parents)
             + "}"
         )
+
+    def get_html_cpt(self):
+        """
+        Write the CPT as an html table.
+
+        Note: primarily used for drawing a CPT diagram.
+
+        Returns:
+            str: html-like table of CPT that is valid for graphviz
+
+        """
+        if len(self.parents) == 0:
+            return "P({} = T) = {}".format(self.name, self.probabilities.iloc[0]["prob"])
+        else:
+            html_body = "<table border='1'><tr>"
+            for column in self.probabilities.columns[:-1]:
+                html_body += "<td>{}</td>".format(column)
+            html_body += "<td>P({} = T)</td>".format(self.name)
+            html_body += "</tr>"
+
+            for row in self.probabilities.itertuples():
+                html_body += "<tr>"
+                for idx, column in enumerate(self.probabilities.columns):
+                    html_body += "<td>{}</td>".format(row[idx + 1])
+                html_body += "</tr>"
+
+            html_body += "</table>"
+            return "<{}>".format(html_body)
