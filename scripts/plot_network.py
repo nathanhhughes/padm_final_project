@@ -3,12 +3,7 @@
 from padm_final_project.network_utils import generate_network
 import matplotlib.image as mpimage
 import matplotlib.pyplot as plt
-import pygraphviz as pgv
-import networkx as nx
-import numpy as np
 import tempfile
-import sys
-
 
 
 def main():
