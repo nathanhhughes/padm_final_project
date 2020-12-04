@@ -109,7 +109,7 @@ class BayesNet:
             ax=ax,
         )
 
-    def get_cpt_diagram(self, rank_labels=["a", "s", "w"], format_type="png"):
+    def get_cpt_diagram(self, rank_labels=["a", "s", "w"], format_type=None, size=None):
         """
         Draw the graph (but have CPTs as labels).
 
@@ -120,7 +120,11 @@ class BayesNet:
             bytes: Rendered PNG of graph
         """
         dot_graph = gv.Digraph(strict=True)
-        dot_graph.format = format_type
+        if format_type is not None:
+            dot_graph.format = format_type
+        if size is not None:
+            dot_graph.size = size
+
         key_to_subgraph = {
             key: gv.Digraph(name=key, graph_attr={"rank": "same"})
             for key in rank_labels
