@@ -89,7 +89,7 @@ class Node:
         if len(self.parents) == 0:
             return "P({} = T) = {}".format(self.name, self.probabilities.iloc[0]["prob"])
         else:
-            html_body = "<table border='1'><tr>"
+            html_body = '<table border="0" cellborder="1"><tr>'
             for column in self.probabilities.columns[:-1]:
                 html_body += "<td>{}</td>".format(column)
             html_body += "<td>P({} = T)</td>".format(self.name)
