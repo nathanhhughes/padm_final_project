@@ -144,4 +144,4 @@ class BayesNet:
         for edge in self.graph.edges:
             dot_graph.add_edge(*edge)
 
-        return dot_graph.draw(format="png", prog="dot")
+        return dot_graph

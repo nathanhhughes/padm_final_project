@@ -10,8 +10,9 @@ def main():
     """Generate a network and draw it."""
     a = generate_network()
 
+
     with tempfile.NamedTemporaryFile() as fout:
-        fout.write(a.draw_cpt_diagram())
+        fout.write(a.draw_cpt_diagram().draw(format="png", prog="dot"))
         fout.seek(0)
         img_to_plot = mpimage.imread(fout.name)
         plt.imshow(img_to_plot)
