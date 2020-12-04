@@ -1,6 +1,9 @@
 """Module containing the BayesNet class."""
 import networkx as nx
-import pygraphviz as pgv
+try:
+    import pygraphviz as pgv
+except ImportError;
+    import graphviz as pgv
 
 
 class BayesNet:
