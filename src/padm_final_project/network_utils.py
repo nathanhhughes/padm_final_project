@@ -6,7 +6,7 @@ import pandas as pd
 import random
 
 
-def generate_network(n_attacks=2, n_subsystems=3, n_workstations=6):
+def generate_network(n_attacks=2, n_subsystems=3, n_workstations=6, seed=None):
     """
     Make an example network with the number of components.
 
@@ -19,6 +19,9 @@ def generate_network(n_attacks=2, n_subsystems=3, n_workstations=6):
       BayesNet: a bayes net with the specified random variables.
 
     """
+    if seed is not None:
+        np.random.seed(seed)
+
     # TODO(someone) think about moving the graph building to the BayesNet class
     G = nx.DiGraph()
     graph_width = max(n_attacks, n_subsystems, n_workstations)

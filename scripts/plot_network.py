@@ -16,14 +16,14 @@ def main():
 
     with tempfile.TemporaryDirectory() as output_dir:
         output_path = pathlib.Path(output_dir)
-        gv_graph = a.get_cpt_diagram(format_type="png")
+        gv_graph = a.get_cpt_diagram(format_type="png", size="2,2")
         gv_graph.render(directory=str(output_path))
 
         img_to_plot = mpimage.imread(str(output_path / "Digraph.gv.png"))
 
-    ax[1].imshow(img_to_plot)
-    ax[1].axis("off")
-    plt.show()
+        ax[1].imshow(img_to_plot)
+        ax[1].axis("off")
+        plt.show()
 
 
 if __name__ == "__main__":
