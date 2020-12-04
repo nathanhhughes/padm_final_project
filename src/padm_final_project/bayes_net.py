@@ -2,7 +2,7 @@
 import networkx as nx
 try:
     import pygraphviz as pgv
-except ImportError;
+except ImportError:
     import graphviz as pgv
 
 
