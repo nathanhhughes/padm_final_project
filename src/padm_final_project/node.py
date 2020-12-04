@@ -98,7 +98,7 @@ class Node:
             for row in self.probabilities.itertuples():
                 html_body += "<tr>"
                 for idx, column in enumerate(self.probabilities.columns):
-                    if idx == len(self.probablities.columns) - 1:
+                    if idx == len(self.probabilities.columns) - 1:
                         html_body += "<td>{:1.3f}</td>".format(row[idx + 1])
                     else:
                         html_body += "<td>{}</td>".format(row[idx + 1])
