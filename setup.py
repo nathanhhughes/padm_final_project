@@ -8,5 +8,5 @@ setuptools.setup(
     packages=setuptools.find_packages(where="src"),
     package_dir={"": "src"},
     python_requires=">=3.6",
-    install_requires=["pandas", "networkx", "matplotlib"],
+    install_requires=["pandas", "networkx", "matplotlib", "pygraphviz"],
 )
