@@ -110,7 +110,6 @@ class BayesNet:
             node_color="orange",
             node_size=500,
             ax=ax,
-            labels=fake_labels,
         )
 
     def draw_cpt_diagram(self, rank_labels=["a", "s", "w"]):
