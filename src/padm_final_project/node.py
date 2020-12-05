@@ -87,18 +87,21 @@ class Node:
 
         """
         if len(self.parents) == 0:
-            return "P({} = T) = {}".format(self.name, self.probabilities.iloc[0]["prob"])
+            return "P({} = True) = {:1.3f}".format(self.name, self.probabilities.iloc[0]["prob"])
         else:
-            html_body = "<table border='1'><tr>"
+            html_body = '<table border="0" cellborder="1"><tr>'
             for column in self.probabilities.columns[:-1]:
                 html_body += "<td>{}</td>".format(column)
-            html_body += "<td>P({} = T)</td>".format(self.name)
+            html_body += "<td>P({} = True)</td>".format(self.name)
             html_body += "</tr>"
 
             for row in self.probabilities.itertuples():
                 html_body += "<tr>"
                 for idx, column in enumerate(self.probabilities.columns):
-                    html_body += "<td>{}</td>".format(row[idx + 1])
+                    if idx == len(self.probabilities.columns) - 1:
+                        html_body += "<td>{:1.3f}</td>".format(row[idx + 1])
+                    else:
+                        html_body += "<td>{}</td>".format(row[idx + 1])
                 html_body += "</tr>"
 
             html_body += "</table>"

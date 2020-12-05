@@ -4,18 +4,25 @@ from padm_final_project.network_utils import generate_network
 import matplotlib.image as mpimage
 import matplotlib.pyplot as plt
 import tempfile
+import pathlib
 
 
 def main():
     """Generate a network and draw it."""
     a = generate_network()
 
-    with tempfile.NamedTemporaryFile() as fout:
-        fout.write(a.draw_cpt_diagram())
-        fout.seek(0)
-        img_to_plot = mpimage.imread(fout.name)
-        plt.imshow(img_to_plot)
-        plt.axis("off")
+    fig, ax = plt.subplots(2)
+    a.draw_net(ax=ax[0])
+
+    with tempfile.TemporaryDirectory() as output_dir:
+        output_path = pathlib.Path(output_dir)
+        gv_graph = a.get_cpt_diagram(format_type="png", size="2,2")
+        gv_graph.render(directory=str(output_path))
+
+        img_to_plot = mpimage.imread(str(output_path / "Digraph.gv.png"))
+
+        ax[1].imshow(img_to_plot)
+        ax[1].axis("off")
         plt.show()
 
 

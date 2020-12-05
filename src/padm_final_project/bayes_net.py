@@ -1,9 +1,6 @@
 """Module containing the BayesNet class."""
 import networkx as nx
-try:
-    import pygraphviz as pgv
-except ImportError;
-    import graphviz as pgv
+import graphviz as gv
 
 
 class BayesNet:
@@ -110,10 +107,9 @@ class BayesNet:
             node_color="orange",
             node_size=500,
             ax=ax,
-            labels=fake_labels,
         )
 
-    def draw_cpt_diagram(self, rank_labels=["a", "s", "w"]):
+    def get_cpt_diagram(self, rank_labels=["a", "s", "w"], format_type=None, size=None):
         """
         Draw the graph (but have CPTs as labels).
 
@@ -123,25 +119,29 @@ class BayesNet:
         Returns:
             bytes: Rendered PNG of graph
         """
-        dot_graph = pgv.AGraph(strict=True, directed=True)
-        for key in rank_labels:
-            dot_graph.add_subgraph(name=key, rank="same")
+        dot_graph = gv.Digraph(strict=True)
+        if format_type is not None:
+            dot_graph.format = format_type
+        if size is not None:
+            dot_graph.size = size
 
         key_to_subgraph = {
-            subgraph.name: subgraph for subgraph in dot_graph.subgraphs()
+            key: gv.Digraph(name=key, graph_attr={"rank": "same"})
+            for key in rank_labels
         }
 
         for node_key, node in self.nodes.items():
             if node_key[0] in key_to_subgraph:
-                key_to_subgraph[node_key[0]].add_node(node_key)
+                graph_to_use = key_to_subgraph[node_key[0]]
             else:
-                dot_graph.add_node(node_key)
+                graph_to_use = dot_graph
 
-            cpt_node = dot_graph.get_node(node_key)
-            cpt_node.attr["shape"] = "oval"
-            cpt_node.attr["label"] = node.get_html_cpt()
+            graph_to_use.node(node_key, node.get_html_cpt(), shape="oval")
+
+        for _, subgraph in key_to_subgraph.items():
+            dot_graph.subgraph(subgraph)
 
         for edge in self.graph.edges:
-            dot_graph.add_edge(*edge)
+            dot_graph.edge(*edge)
 
-        return dot_graph.draw(format="png", prog="dot")
+        return dot_graph
