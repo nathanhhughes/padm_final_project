@@ -24,45 +24,6 @@ class BayesNet:
         self.nodes = nodes
         self.graph = graph
 
-    def add_observation(self, node, observation):
-        """
-        Add an observation of a node to the network.
-
-        Parameters:
-            node (Node): node that was observed
-            observation ( ): value of the observation
-        """
-        raise NotImplementedError()
-
-    def remove_observation(self, node):
-        """
-        Remove an observation from the network.
-
-        Parameters:
-            node (Node): node observation that is being removed
-        """
-        raise NotImplementedError()
-
-    def add_node(self, node):
-        """
-        Add a node to the network. Must be a leaf node.
-
-        Parameters:
-            node (Node): node to be added to the network
-        """
-        raise NotImplementedError()
-
-    def remove_node(self, node):
-        """
-        Remove a node from the network.
-
-        The removed node must be a leaf node.
-
-        Parameters:
-            node (Node): leaf node to be removed from the network
-        """
-        raise NotImplementedError()
-
     def get_MAP_estimate(self, o_nodes=[]):
         """
         Compute the most likely configuration of the network given the evidence.
@@ -72,15 +33,82 @@ class BayesNet:
         """
         raise NotImplementedError()
 
-    def get_posterior(self, q_nodes, o_nodes=[]):
+    def get_posterior_1(self, q_nodes, o_nodes=dict()):
+        """
+        Compute the posterior distribution for the query nodes given observations.
+        
+        USING CHAIN RULE
+
+        Parameters:
+            q_nodes (list[string]): list of string names of nodes queried nodes
+            o_nodes (dict): dictionary of observed string node names with respective True/False observations
+        Return:
+            dictionary of most likely probabilities
+        """
+        posteriors = dict()
+        # for each node in the query, call the get posterior of a single node
+        reuse_posteriors = dict()
+        for node_str in q_nodes:
+            (posteriors[node_str], reuse_posteriors) = self.get_posterior_of_node_1(node_str, o_nodes, reuse_posteriors)
+        return posteriors
+        
+
+    def get_posterior_of_node_1(self, node_str, o_nodes=dict(), reuse_posteriors=dict()):
         """
         Compute the posterior distribution for the query nodes given observations.
 
+        USING CHAIN RULE
+
         Parameters:
-            q_nodes (set(Node)): Set of nodes for which the posterior is computed
-            o_nodes (set(Node)): Set of observed nodes.
+            node_str (string): node name
+            o_nodes (dict): dictionary of observed string node names with respective True/False observations
+            reuse_posteriors (dict): dictionary of previously calculated posteriors; 
+                                    although this doesn't matter for get_posterior_of_node_1(), 
+                                    it is relevant for get_posterior_1()
+
+        Return:
+            a tuple:
+                probability of the node evaluating to True given the obsevations
+                a reuse_posteriors dictionary
         """
-        raise NotImplementedError()
+
+        node = self.nodes[node_str]
+
+        # check if the posterior of this node has previously been evaluated already
+        if node_str in reuse_posteriors:
+            return (reuse_posteriors[node_str], reuse_posteriors)
+
+        # check if the node has been observed
+        if node_str in o_nodes:
+            return (1,reuse_posteriors) if o_nodes[node_str] else (0,reuse_posteriors)
+
+        # check if the node has no parents
+        if len(node.parents) == 0:
+            # this node has not parent yet it wasn't observed - return its posterior
+            node_posterior = node.probabilities["prob"][0]
+            reuse_posteriors[node_str] = node_posterior
+            return (node_posterior, reuse_posteriors)
+
+        # our node has parents
+        else:
+            # get posterior porbabilities for each parent
+            parents_posteriors = dict()
+            for parent in node.parents:
+                (parents_posteriors[parent.name], reuse_posteriors) = self.get_posterior_of_node_1(parent.name, o_nodes, reuse_posteriors)
+            # let's calculate posterior probability of this node
+            node_posterior = 0.0
+            # go through the conditional probability table; 
+            # for each row, ~multiply every value in the row (instead of true/flase use posterior probability for true false)
+            for i in range(len(node.probabilities)):
+                temp = node.probabilities["prob"][i]
+                # for each row, ~multiply every value in the row (instead of true/flase use posterior probability for true false)
+                for parent_name in parents_posteriors:
+                    temp *= parents_posteriors[parent_name] if node.probabilities[parent_name][i] else (1-parents_posteriors[parent_name])
+                # add these values up
+                node_posterior += temp
+            reuse_posteriors[node_str] = node_posterior
+            return (node_posterior, reuse_posteriors)
+
 
     def bucket_elimination(self, o_nodes, attack_nodes):
         """
