@@ -24,6 +24,7 @@ class BayesNet:
         self.nodes = nodes
         self.graph = graph
 
+        
     def get_MAP_estimate(self, q_nodes, observations=dict()):
         """
         Compute the most likely configuration of the network given the evidence.
@@ -33,6 +34,7 @@ class BayesNet:
         """
         raise NotImplementedError()
 
+        
     def get_posterior_1(self, q_nodes, o_nodes=dict()):
         """
         Compute the posterior distribution for the query nodes given observations.
@@ -119,7 +121,7 @@ class BayesNet:
             observations: a dictionary mapping node names to observations
         """
         # 1. (initialize buckets)
-        ordering = create_be_order(self, q_nodes, observations) # list
+        ordering = get_be_ordering(self, q_nodes, observations) # list
         cpts = [nodes[node].probabiliteis for node in ordering]
         buckets = dict()
         for b in ordering: 
@@ -164,6 +166,7 @@ class BayesNet:
 
         return buckets
 
+    
     @staticmethod
     def bucket_product(funcs):
     """
@@ -228,6 +231,7 @@ class BayesNet:
         rows.append(list(perm)+[probability])
     return pd.DataFrame(rows, columns=nodes+['prob'])
 
+
     @staticmethod
     def get_new_node(func, buckets, ordering):
         """
@@ -236,12 +240,37 @@ class BayesNet:
         for node in reversed(ordering):
             if node in func.columns:
                 return node
-            
-    def get_be_ordering(self, q_nodes, observations):
-        """
-        Computes the ordering for the bucket elimination method
-        """
-        raise NotImplementedError()
+    
+        
+    def get_order(self, nodes, f):
+        """Greedy Search for constructing bucket elimination ordering"""
+        nodes = set(self.nodes.keys()) - q_nodes.union(observations.keys())
+        graph = self.graph.subgraph(nodes).copy()
+        hidden_ordering = []
+        for _ in range(len(nodes)):
+            node = argmin_of_f(f, nodes, graph)
+            hidden_ordering.append(node)
+            nodes.remove(node)
+            graph.remove_node(node)
+        return list(q_nodes) + hidden_ordering + list(observations.keys())
+
+
+    @staticmethod
+    def argmin_of_f(f, nodes, graph):
+        """Returns the argmin (over nodes) of f(node, graph) """
+        min_node = None
+        min_score = np.infty
+        for node in nodes:
+            score = f(node, graph)
+            if score < min_score:
+                min_score = score
+                min_node = node
+        return node
+
+    @staticmethod
+    def order_heuristic(node, graph):
+        """Min-neighbors heuristic: The cost of a node is the number of neighbors it has in the current graph"""
+        return len(graph.succ[node]) + len(graph.pred[node])
 
     def draw_net(self, ax=None):
         """Draw a diagram of the network."""
