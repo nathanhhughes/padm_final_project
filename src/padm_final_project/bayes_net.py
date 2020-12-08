@@ -14,7 +14,7 @@ class BayesNet:
     nodes = None
     graph = None
 
-    def __init__(self, nodes, graph):
+    def __init__(self, nodes, graph=None):
         """
         Create the Bayesian Network.
 
@@ -22,7 +22,14 @@ class BayesNet:
             nodes (dict{name(str) -> node(Node)}): dict mapping each node's name to its node object.
         """
         self.nodes = nodes
-        self.graph = graph
+        if graph is not None:
+            self.graph = graph
+        else:
+            self.graph = nx.DiGraph()
+            for node in nodes:
+                self.graph.add_node( node.name, color="")
+                for parent in node.parents:
+                    self.graph.add_edge(parent.name, node.name)
 
     def get_random_workstation_observations(self, seed = None):
         """
@@ -231,14 +238,23 @@ class BayesNet:
 
     def draw_net(self, ax=None):
         """Draw a diagram of the network."""
-        nx.draw(
-            self.graph,
-            with_labels=True,
-            pos=nx.get_node_attributes(self.graph, "pos"),
-            node_color="orange",
-            node_size=500,
-            ax=ax,
-        )
+        try:
+            nx.draw(
+                self.graph,
+                with_labels=True,
+                pos=nx.get_node_attributes(self.graph, "pos"),
+                node_color="orange",
+                node_size=500,
+                ax=ax,
+            )
+        except:
+            nx.draw(
+                self.graph,
+                with_labels=True,
+                node_color="orange",
+                node_size=500,
+                ax=ax,
+            )   
 
     def get_cpt_diagram(self, rank_labels=["a", "s", "w"], format_type=None, size=None):
         """

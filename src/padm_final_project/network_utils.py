@@ -220,5 +220,4 @@ def generate_random_cpt(parents=[]):
                 break
             else:
                 j += 1
-
     return df
