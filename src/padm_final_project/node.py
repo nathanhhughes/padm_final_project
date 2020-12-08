@@ -14,6 +14,7 @@ class Node:
       name (str): name of the node
       probabilities (pd.DataFrame): conditional probability table
       parents (List[Node]): all parents of the node
+      label (Optional[str]): human readable name
     """
 
     name = None
@@ -32,9 +33,12 @@ class Node:
         """
         # for nodes without parents, probabilities is just [0.95], P(X=true)
         self.name = name
-        self.parents = parents
+        self.label = label
+
         if parents is None:
             self.parents = []
+        else:
+            self.parents = parents
 
         self.probabilities = probabilities
 
@@ -71,7 +75,6 @@ class Node:
 
         return cls(name, df, parents=parents, label=label)
 
-
     @classmethod
     def from_inhibitions(cls, name, parents, inhibition_values, label=None):
         """
@@ -90,12 +93,14 @@ class Node:
 
         # Get parent assignment ordering
         bitmasks = []
-        for i in range(2**len(parents)):
+        for i in range(2 ** len(parents)):
             bitmask = bin(i)[-1:1:-1]  # drop first two characters and reverse bit order
             if len(bitmask) < len(parents):
-                bitmask += '0' * (len(parents) - len(bitmask))
+                bitmask += "0" * (len(parents) - len(bitmask))
 
-            bitmasks.append([True if bit == "1" else False for bit in bitmask[:len(parents)]])
+            bitmasks.append(
+                [True if bit == "1" else False for bit in bitmask[: len(parents)]]
+            )
 
         # compute probabilities for all parent assignments assume independence between parents
         for bitmask in bitmasks:
@@ -107,7 +112,6 @@ class Node:
             probabilities.append(1.0 - probability)
 
         return cls.from_probabilities(name, parents, probabilities, label=label)
-
 
     def __str__(self):
         """Show the conditional probability table."""
@@ -145,23 +149,36 @@ class Node:
             str: html-like table of CPT that is valid for graphviz
 
         """
+        html_body = '<<table border="0" cellborder="1">'
+        html_body += '<tr><td colspan="{}"><b>Node: {}</b></td></tr>'.format(
+            len(self.parents) + 1, self.name if self.label is None else self.label
+        )
+
         if len(self.parents) == 0:
-            return "P({} = True) = {:1.3f}".format(self.name, self.probabilities.iloc[0]["prob"])
-        else:
-            html_body = '<table border="0" cellborder="1"><tr>'
-            for column in self.probabilities.columns[:-1]:
-                html_body += "<td>{}</td>".format(column)
-            html_body += "<td>P({} = True)</td>".format(self.name)
+            html_body += "<tr><td>P({} = True) = {:1.3f}</td></tr>".format(
+                self.name, self.probabilities.iloc[0]["prob"]
+            )
+            html_body += "</table>>"
+            return html_body
+
+        html_body += "<tr>"
+        html_body += '<td colspan="{}">Parents</td>'.format(len(self.parents))
+        html_body += '<td rowspan="2">P({} = True)</td>'.format(self.name)
+        html_body += "</tr>"
+
+        html_body += "<tr>"
+        for column in self.probabilities.columns[:-1]:
+            html_body += "<td>{}</td>".format(column)
+        html_body += "</tr>"
+
+        for row in self.probabilities.itertuples():
+            html_body += "<tr>"
+            for idx, column in enumerate(self.probabilities.columns):
+                if idx == len(self.probabilities.columns) - 1:
+                    html_body += "<td>{:1.3f}</td>".format(row[idx + 1])
+                else:
+                    html_body += "<td>{}</td>".format(row[idx + 1])
             html_body += "</tr>"
 
-            for row in self.probabilities.itertuples():
-                html_body += "<tr>"
-                for idx, column in enumerate(self.probabilities.columns):
-                    if idx == len(self.probabilities.columns) - 1:
-                        html_body += "<td>{:1.3f}</td>".format(row[idx + 1])
-                    else:
-                        html_body += "<td>{}</td>".format(row[idx + 1])
-                html_body += "</tr>"
-
-            html_body += "</table>"
-            return "<{}>".format(html_body)
+        html_body += "</table>>"
+        return html_body

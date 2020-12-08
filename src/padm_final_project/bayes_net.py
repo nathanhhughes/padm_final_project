@@ -38,7 +38,7 @@ class BayesNet:
         """
         Create a dictionary of random workstation observations
 
-        Returns: 
+        Returns:
             o_nodes (dict(str->bool)): dictionary of observed string node names with respective True/False observations
         """
         if seed is not None:
@@ -50,7 +50,7 @@ class BayesNet:
             if node_str[0] == 'w':
                 o_nodes[node_str] = random.random() > 0.5
         return o_nodes
-        
+
     def get_MAP_estimate(self, q_nodes, observations):
         """
         Compute the most likely configuration of the network given the evidence.
@@ -75,7 +75,7 @@ class BayesNet:
                 map_estimate[node] = argmax_node.loc[assignment][node]
         return map_estimate
 
-        
+
     def get_posterior(self, q_nodes, o_nodes=dict()):
         """
         Compute the posterior distribution for the query nodes given observations.
@@ -91,7 +91,7 @@ class BayesNet:
 
     def bucket_elimination(self, q_nodes, observations):
         """
-        Perform bucket elimination. 
+        Perform bucket elimination.
 
         Parameters:
             q_nodes: a list of string names for query nodes
@@ -101,7 +101,7 @@ class BayesNet:
         ordering = BayesNet.get_order(self, q_nodes, observations) # list
         cpts = [self.nodes[node].probabilities for node in ordering]
         buckets = dict()
-        for b in ordering: 
+        for b in ordering:
             buckets[b] = []
         # Go through each cpt function, add it to the highest ranked bucket for which the cpt includes the bucket's node
         for cpt in reversed(cpts):
@@ -145,7 +145,7 @@ class BayesNet:
 
         return buckets
 
-    
+
     @staticmethod
     def bucket_product(funcs):
         """
@@ -154,7 +154,7 @@ class BayesNet:
         """
         # Get set of nodes involved in all the functions
         nodes = set()
-        for func in funcs: 
+        for func in funcs:
             nodes = nodes.union(set(func.columns))
         nodes.remove('prob')
         nodes = list(nodes)
@@ -212,8 +212,8 @@ class BayesNet:
         for node in reversed(ordering):
             if node in func.columns:
                 return node
-    
-        
+
+
     def get_order(self, q_nodes, observations):
         """Greedy Search for constructing bucket elimination ordering"""
         nodes = set(self.nodes.keys()) - set(q_nodes).union(set(observations.keys()))
@@ -257,7 +257,7 @@ class BayesNet:
                 node_color="orange",
                 node_size=500,
                 ax=ax,
-            )   
+            )
 
     def get_cpt_diagram(self, rank_labels=["a", "s", "w"], format_type=None, size=None):
         """
