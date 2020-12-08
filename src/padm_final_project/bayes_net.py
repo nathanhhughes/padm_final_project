@@ -1,6 +1,9 @@
 """Module containing the BayesNet class."""
 import networkx as nx
 import graphviz as gv
+import pandas as pd
+import numpy as np
+import random
 
 
 class BayesNet:

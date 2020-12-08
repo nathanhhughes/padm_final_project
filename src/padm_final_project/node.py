@@ -1,7 +1,9 @@
 """Module containing the Node class."""
 # Current assumption: nodes can be either true or false (rather than A B C)
 # Current assumption: store only the probability that the nodes is true
-
+import pandas as pd
+import numpy as np
+import random
 
 class Node:
     """
