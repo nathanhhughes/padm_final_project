@@ -25,16 +25,38 @@ class Node:
 
         Args:
           name (str): node name
-          probabilities (pd.DataFrame): likelihoods of node being true ordered by
-           cartesian product of parents
+          probabilities (pd.DataFrame): likelihoods of node being true ordered by cartesian product of parents
+          probabilities (np.array): likelihoods of node being true ordered by cartesian product of parents
           parents (Optional[List[Node]]): parents in the conditional probability table
         """
         # for nodes without parents, probabilities is just [0.95], P(X=true)
         self.name = name
-        self.probabilities = probabilities
         self.parents = parents
         if parents is None:
             self.parents = []
+        
+        if isinstance(probabilities, pd.DataFrame):
+            self.probabilities = probabilities
+        if isinstance(probabilities, (np.ndarray, np.generic)):
+            parent_strings = []
+            for parent in self.parents:
+                parent_strings += [parent.name]
+            df = pd.DataFrame(columns=parent_strings + ["prob"])
+            ar = [False] * len(parent_strings)
+            # we need to create 2^parents rows - the cpt table.
+            # these few lines generate all combinations of false / true statements
+            for i in range(2 ** len(parent_strings)):
+                df.loc[i] = ar + [probabilities[i]]
+                j = 0
+                while j < len(parent_strings) and True:
+                    if not ar[j]:
+                        ar[j] = True
+                        ar[0:j] = [False] * (j)
+                        break
+                    else:
+                        j += 1
+            self.probabilities = df
+            
 
     @classmethod
     def from_inhibitions(cls, name, parents, inhibition_values):

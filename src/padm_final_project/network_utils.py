@@ -7,24 +7,20 @@ import numpy as np
 import random
 
 
-def generate_network(n_attacks=2, n_subsystems=3, n_workstations=6, seed=None):
+def generate_random_network(n_attacks=2, n_subsystems=3, n_workstations=6, seed=None):
     """
     Make an example network with the number of components.
-
     Args:
       n_attacks (int): number of "attack" random variables
       n_subsystems (int): number of "subsystem" random variables
       n_workstations (int): number of "workstation" random variables
-
     Returns:
       BayesNet: a bayes net with the specified random variables.
-
     """
     if seed is not None:
-        np.random.seed(seed)
+        random.seed(seed)
 
     # TODO(someone) think about moving the graph building to the BayesNet class
-
     G = nx.DiGraph()
     graph_width = max(n_attacks, n_subsystems, n_workstations)
 
@@ -34,80 +30,164 @@ def generate_network(n_attacks=2, n_subsystems=3, n_workstations=6, seed=None):
     if n_workstations == 0:
         raise ValueError("Need at least one workstation!")
 
-    # generate workstation nodes;
-    workstations_nodes = []
-    for i in range(n_workstations):
+    # generate attack nodes
+    attack_nodes = []
+    for i in range(n_attacks):
         G.add_node(
-            "w" + str(i), pos=(graph_width * (i + 0.5) / n_workstations, 4), color="r"
+            "a" + str(i), pos=(graph_width * (i + 0.5) / n_attacks, 4), color="r"
         )
-        workstations_nodes.append(Node("w" + str(i), generate_random_cpt([])))
-
+        attack_nodes.append(Node("a" + str(i), generate_random_cpt([])))
     # generate subsystem nodes
     subsystem_nodes = []
     for i in range(n_subsystems):
-        # a random sample of 1 through n workstations
+        # a random sample of 1 through n attacks
         G.add_node(
             "s" + str(i), pos=(graph_width * (i + 0.5) / n_subsystems, 2), color="b"
         )
-        sample_workstations = random.sample(
-            range(0, n_workstations), random.randint(1, n_workstations)
+        sample_attacks = random.sample(
+            range(0, n_attacks), random.randint(1, n_attacks)
         )
-        for j in sample_workstations:
-            G.add_edge("w" + str(j), "s" + str(i))
+        for j in sample_attacks:
+            G.add_edge("a" + str(j), "s" + str(i))
         subsystem_nodes.append(
             Node(
                 "s" + str(i),
-                generate_random_cpt(["w" + str(j) for j in sample_workstations]),
-                parents=[workstations_nodes[j] for j in sample_workstations],
+                generate_random_cpt(["a" + str(j) for j in sample_attacks]),
+                parents=[attack_nodes[j] for j in sample_attacks],
             )
         )
 
-    # generate attack nodes;
-    attacks_nodes = []
-    for i in range(n_attacks):
+    # generate workstation nodes
+    workstation_nodes = []
+    for i in range(n_workstations):
         G.add_node(
-            "a" + str(i), pos=(graph_width * (i + 0.5) / n_attacks, 0), color=""
+            "w" + str(i), pos=(graph_width * (i + 0.5) / n_workstations, 0), color=""
         )
 
         if n_subsystems != 0:
-            sample_workstations = random.sample(
-                range(0, n_workstations), random.randint(0, n_workstations // 2)
-            )  # sample some workstations
+            sample_attacks = random.sample(
+                range(0, n_attacks), random.randint(0, n_attacks // 2)
+            )  # sample some attacks
             sample_subsystems = random.sample(
                 range(0, n_subsystems), random.randint(1, n_subsystems)
             )  # sample at least one subsystem
-            for j in sample_workstations:
-                G.add_edge("w" + str(j), "a" + str(i))
+            for j in sample_attacks:
+                G.add_edge("a" + str(j), "w" + str(i))
             for j in sample_subsystems:
-                G.add_edge("s" + str(j), "a" + str(i))
-            subsystem_nodes.append(
+                G.add_edge("s" + str(j), "w" + str(i))
+            workstation_nodes.append(
                 Node(
-                    "a" + str(i),
+                    "w" + str(i),
                     generate_random_cpt(
-                        ["w" + str(j) for j in sample_workstations]
+                        ["a" + str(j) for j in sample_attacks]
                         + ["s" + str(j) for j in sample_subsystems]
                     ),
-                    [workstations_nodes[j] for j in sample_workstations]
+                    [attack_nodes[j] for j in sample_attacks]
                     + [subsystem_nodes[j] for j in sample_subsystems],
                 )
             )
         else:
             # there are no subsystems, sample just attacks
-            sample_workstations = random.sample(
-                range(0, n_workstations), random.randint(1, n_workstations)
+            sample_attacks = random.sample(
+                range(0, n_attacks), random.randint(1, n_attacks)
             )
-            for j in sample_workstations:
-                G.add_edge("w" + str(j), "a" + str(i))
-            attacks_nodes.append(
+            for j in sample_attacks:
+                G.add_edge("a" + str(j), "w" + str(i))
+            workstation_nodes.append(
                 Node(
-                    "a" + str(i),
-                    generate_random_cpt(["w" + str(j) for j in sample_workstations]),
-                    [workstations_nodes[j] for j in sample_workstations],
+                    "w" + str(i),
+                    generate_random_cpt(["a" + str(j) for j in sample_attacks]),
+                    [attack_nodes[j] for j in sample_attacks],
                 )
             )
 
     dictionary_of_nodes = dict()
-    all_nodes = attacks_nodes + subsystem_nodes + workstations_nodes
+    all_nodes = attack_nodes + subsystem_nodes + workstation_nodes
+    for n in all_nodes:
+        dictionary_of_nodes[n.name] = n
+    return BayesNet(dictionary_of_nodes, G)
+
+
+
+
+
+def generate_network(n_attacks=3, n_subsystems=5, n_workstations=5, branch=3, seed=None):
+    """
+    Make an example network with the number of components.
+    Args:
+      n_attacks (int): number of "attack" random variables
+      n_subsystems (int): number of "subsystem" random variables
+      n_workstations (int): number of "workstation" random variables
+      branch (int): parent branching factor
+    Returns:
+      BayesNet: a bayes net with the specified random variables.
+    """
+    if seed is not None:
+        random.seed(seed)
+
+    # TODO(someone) think about moving the graph building to the BayesNet class
+    G = nx.DiGraph()
+    graph_width = max(n_attacks, n_subsystems, n_workstations)
+
+    # handle inadequate inputs
+    if n_attacks == 0:
+        raise ValueError("Need at least one attack!")
+    if n_subsystems == 0:
+        raise ValueError("Need at least one subsystem!")
+    if n_workstations == 0:
+        raise ValueError("Need at least one workstation!")
+    if branch > n_subsystems or branch > n_attacks:
+        raise ValueError("Branching factor needs to be smaller than number of subsystems / number of attacks!")
+
+    # generate attack nodes
+    attack_nodes = []
+    for i in range(n_attacks):
+        G.add_node(
+            "a" + str(i), pos=(graph_width * (i + 0.5) / n_attacks, 4), color="r"
+        )
+        attack_nodes.append(Node("a" + str(i), generate_random_cpt([])))
+    # generate subsystem nodes
+    subsystem_nodes = []
+    for i in range(n_subsystems):
+        # a random sample of 1 through n attacks
+        G.add_node(
+            "s" + str(i), pos=(graph_width * (i + 0.5) / n_subsystems, 2), color="b"
+        )
+        sample_attacks = random.sample(
+            range(0, n_attacks), branch
+        )
+        for j in sample_attacks:
+            G.add_edge("a" + str(j), "s" + str(i))
+        subsystem_nodes.append(
+            Node(
+                "s" + str(i),
+                generate_random_cpt(["a" + str(j) for j in sample_attacks]),
+                parents=[attack_nodes[j] for j in sample_attacks],
+            )
+        )
+
+    # generate workstation nodes
+    workstation_nodes = []
+    for i in range(n_workstations):
+        G.add_node(
+            "w" + str(i), pos=(graph_width * (i + 0.5) / n_workstations, 0), color=""
+        )
+        sample_subsystems = random.sample(
+            range(0, n_subsystems), branch
+        )  # sample subsystems
+        for j in sample_subsystems:
+            G.add_edge("s" + str(j), "w" + str(i))
+
+        workstation_nodes.append(
+            Node(
+                "w" + str(i),
+                generate_random_cpt(["s" + str(j) for j in sample_subsystems]),
+                [subsystem_nodes[j] for j in sample_subsystems],
+            )
+        )
+
+    dictionary_of_nodes = dict()
+    all_nodes = attack_nodes + subsystem_nodes + workstation_nodes
     for n in all_nodes:
         dictionary_of_nodes[n.name] = n
     return BayesNet(dictionary_of_nodes, G)
