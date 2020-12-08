@@ -9,7 +9,7 @@ def test_generate_network_basic():
 
 
 def test_draw_network():
-    """Make a network and make sure nothing goes wrong."""
+    """Draw a network and make sure nothing goes wrong."""
     net = generate_network()
     net.draw_net()
     assert net is not None
