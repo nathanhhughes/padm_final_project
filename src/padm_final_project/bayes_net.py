@@ -196,21 +196,18 @@ class BayesNet:
             nodes = nodes.union(set(func.columns))
         nodes.remove('prob')
         nodes = list(nodes)
-
         # Create all permutations of node assignments
         node_values = [True, False] # Assumes binary nodes (must implement different logic to get node_values if nodes aren't binary)
         perms = set()
         for c in itertools.combinations_with_replacement(node_values, len(nodes)):
             for p in itertools.permutations(c):
                 perms.add(p)
-
         # Convert func dfs to dfs with a multiindex corresponding to node assignments
         # Only column left is 'prob' column
         mi_funcs = []
         for func in funcs:
             midx = pd.MultiIndex.from_frame(func[func.columns[:-1]])
             mi_funcs.append(func[['prob']].set_index(midx))
-
         # Compute the probability for each assignment and create new df
         rows = []
         for perm in perms:
@@ -224,7 +221,6 @@ class BayesNet:
 
     @staticmethod
     def eliminate_node(node, func, elim_func):
-
         """
         Takes a function and a node to sum out of the function.
         Used by bucket elimination at each bucket after func_product() to sum out the bucket's node.
@@ -233,15 +229,12 @@ class BayesNet:
         nodes = list(func.columns)
         nodes.remove(node)
         nodes.remove('prob')
-
         # Get all permutations of node assignmnets not being summed out
         perms = []
         for perm in func[nodes].drop_duplicates().iterrows():
             perms.append(tuple(perm[1]))
-
         midx = pd.MultiIndex.from_frame(func[nodes])
         mi_func = func[[node, 'prob']].set_index(midx)
-
         rows = []
         for perm in perms:
             probability = elim_func(mi_func.loc[perm].prob)
