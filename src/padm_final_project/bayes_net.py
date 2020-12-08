@@ -41,14 +41,30 @@ class BayesNet:
                 o_nodes[node_str] = random.random() > 0.5
         return o_nodes
         
-    def get_MAP_estimate(self, q_nodes, observations=dict()):
+    def get_MAP_estimate(self, q_nodes, observations):
         """
         Compute the most likely configuration of the network given the evidence.
 
         Parameters:
-            o_nodes (dict(str->value)): dict mapping node name to its observed value
+            q_nodes (set(str)): set of nodes to get MAP estimate for
+            observations (dict(str->value)): dict mapping node name to its observed value
         """
-        raise NotImplementedError()
+        ordering = self.get_order(q_nodes, observations)
+        print(ordering)
+        buckets = self.bucket_elimination(q_nodes, observations)
+        map_estimate = {ordering[0]: bool(np.argmax(buckets[ordering[0]]["prob"]))}
+        for node in ordering[1:]:
+            print(map_estimate)
+            if node not in q_nodes:
+                return map_estimate
+            else:
+                argmax_node = buckets[node]
+                assignment = tuple(map_estimate[node] for node in argmax_node.index.names if node in map_estimate.keys())
+                print(assignment)
+                print(argmax_node)
+                map_estimate[node] = argmax_node.loc[assignment][node]
+        return map_estimate
+
         
     def get_posterior(self, q_nodes, o_nodes=dict()):
         """
@@ -72,8 +88,8 @@ class BayesNet:
             observations: a dictionary mapping node names to observations
         """
         # 1. (initialize buckets)
-        ordering = get_be_ordering(self, q_nodes, observations) # list
-        cpts = [nodes[node].probabiliteis for node in ordering]
+        ordering = BayesNet.get_order(self, q_nodes, observations) # list
+        cpts = [self.nodes[node].probabilities for node in ordering]
         buckets = dict()
         for b in ordering: 
             buckets[b] = []
@@ -88,32 +104,34 @@ class BayesNet:
         # 2. (Backwards)
         for i, node in reversed(list(enumerate(ordering[1:]))):
             i += 1
-            print('node', node, 'i', i)
-            print('ordering', ordering[:i])
+#             print('node', node, 'i', i)
+#             print('ordering', ordering[:i])
             # If an observation exists for the current bucket
             if node in observations.keys():
                 for j, func in enumerate(buckets[node]):
                     buckets[node].pop(j)
                     new_func = func[func[node] == observations[node]]
                     new_func = new_func.drop(columns=[node])
-                    new_node = get_new_node(new_func, buckets, ordering)
+                    new_node = BayesNet.get_new_node(new_func, buckets, ordering)
                     buckets[new_node].append(new_func)
 
             else:
                 max_or_sum = max if (node in q_nodes) else sum
-                product_func = bucket_product(buckets[node])
-                eliminated_func = eliminate_node(node, product_func, max_or_sum)
-                new_node = get_new_node(eliminated_func, buckets, ordering)
+                product_func = BayesNet.bucket_product(buckets[node])
+                eliminated_func = BayesNet.eliminate_node(node, product_func, max_or_sum)
+                new_node = BayesNet.get_new_node(eliminated_func, buckets, ordering)
                 buckets[new_node].append(eliminated_func)
                 if max_or_sum == max:
-                    argmax_func = eliminate_node(node, product_func, np.argmax)
+                    argmax_func = BayesNet.eliminate_node(node, product_func, np.argmax)
+                    midx = pd.MultiIndex.from_frame(argmax_func[argmax_func.columns[:-1]])
+                    argmax_func = argmax_func[['prob']].set_index(midx)
                     argmax_func.rename(columns={'prob': node}, inplace=True)
                     argmax_func[node] = argmax_func[node].apply(lambda x: x==1)
-                    buckets[node] = [argmax_func]
+                    buckets[node] = argmax_func
 
         final_node = ordering[0]
-        final_product = bucket_product(buckets[final_node])
-        buckets[final_node] = [final_product]
+        final_product = BayesNet.bucket_product(buckets[final_node])
+        buckets[final_node] = final_product
 
         return buckets
 
@@ -130,21 +148,18 @@ class BayesNet:
             nodes = nodes.union(set(func.columns))
         nodes.remove('prob')
         nodes = list(nodes)
-        
         # Create all permutations of node assignments
         node_values = [True, False] # Assumes binary nodes (must implement different logic to get node_values if nodes aren't binary)
         perms = set()
         for c in itertools.combinations_with_replacement(node_values, len(nodes)):
             for p in itertools.permutations(c):
                 perms.add(p)
-                
         # Convert func dfs to dfs with a multiindex corresponding to node assignments
         # Only column left is 'prob' column
         mi_funcs = []
         for func in funcs:
             midx = pd.MultiIndex.from_frame(func[func.columns[:-1]])
             mi_funcs.append(func[['prob']].set_index(midx))
-            
         # Compute the probability for each assignment and create new df
         rows = []
         for perm in perms:
@@ -166,15 +181,12 @@ class BayesNet:
         nodes = list(func.columns)
         nodes.remove(node)
         nodes.remove('prob')
-        
         # Get all permutations of node assignmnets not being summed out
         perms = []
         for perm in func[nodes].drop_duplicates().iterrows():
             perms.append(tuple(perm[1]))
-        print('perms', perms)
         midx = pd.MultiIndex.from_frame(func[nodes])
         mi_func = func[[node, 'prob']].set_index(midx)
-        
         rows = []
         for perm in perms:
             probability = elim_func(mi_func.loc[perm].prob)
@@ -192,13 +204,13 @@ class BayesNet:
                 return node
     
         
-    def get_order(self, nodes, f):
+    def get_order(self, q_nodes, observations):
         """Greedy Search for constructing bucket elimination ordering"""
-        nodes = set(self.nodes.keys()) - q_nodes.union(observations.keys())
+        nodes = set(self.nodes.keys()) - set(q_nodes).union(set(observations.keys()))
         graph = self.graph.subgraph(nodes).copy()
         hidden_ordering = []
         for _ in range(len(nodes)):
-            node = argmin_of_f(f, nodes, graph)
+            node = BayesNet.argmin_of_f(nodes, graph)
             hidden_ordering.append(node)
             nodes.remove(node)
             graph.remove_node(node)
@@ -211,16 +223,11 @@ class BayesNet:
         min_node = None
         min_score = np.infty
         for node in nodes:
-            score = f(node, graph)
+            score = len(graph.succ[node]) + len(graph.pred[node])
             if score < min_score:
                 min_score = score
                 min_node = node
         return node
-
-    @staticmethod
-    def order_heuristic(node, graph):
-        """Min-neighbors heuristic: The cost of a node is the number of neighbors it has in the current graph"""
-        return len(graph.succ[node]) + len(graph.pred[node])
 
     def draw_net(self, ax=None):
         """Draw a diagram of the network."""
