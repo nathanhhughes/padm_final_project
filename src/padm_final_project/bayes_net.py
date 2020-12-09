@@ -285,7 +285,7 @@ class BayesNet:
                 result = pd.DataFrame([elim_func(func.prob)], columns=['prob'])
             else:
                 idx = elim_func(func.prob)
-                result = pd.DataFrame(func[node].iloc[idx], columns=[node])
+                result = pd.DataFrame([func[node].iloc[idx]], columns=[node])
             return result
 
         rows = []
