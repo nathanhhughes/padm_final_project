@@ -3,8 +3,8 @@ import pytest
 
 
 def test_from_probabilities():
-    a = Node("a", 1.0)
-    b = Node("b", 1.0)
+    a = Node.from_probabilities("a", [1.0])
+    b = Node.from_probabilities("b", [1.0])
     test_node = Node.from_probabilities("test", [1.0, 0.1, 0.2, 0.02], parents=[a, b])
 
     # first value: a and b are false

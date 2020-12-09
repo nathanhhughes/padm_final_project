@@ -53,6 +53,9 @@ class Node:
           parents (Optional[List[Node]]): parents in the conditional probability table
           label (Optional[str]): human friendly name of the node
         """
+        if parents is None:
+            return cls(name, pd.DataFrame({"prob": probabilities}), label=label)
+
         parent_strings = []
 
         for parent in parents:
