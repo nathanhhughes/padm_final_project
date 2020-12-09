@@ -62,7 +62,9 @@ class BayesNet:
         ordering = self.get_order(q_nodes, observations)
         print(ordering)
         buckets = self.bucket_elimination(q_nodes, observations)
-        map_estimate = {ordering[0]: bool(np.argmax(buckets[ordering[0]]["prob"]))}
+        initial_node = ordering[0]
+        argmax_idx = np.argmax(buckets[ordering[0]]["prob"])
+        map_estimate = {initial_node: bool(buckets[initial_node][initial_node].iloc[argmax_idx])}
         for node in ordering[1:]:
             print(map_estimate)
             if node not in q_nodes:
@@ -75,21 +77,63 @@ class BayesNet:
                 map_estimate[node] = argmax_node.loc[assignment][node]
         return map_estimate
 
+        def get_MAP_estimate(self, q_nodes, observations):
+        """
+        Compute the most likely configuration of the network given the evidence.
 
-    def get_posterior(self, q_nodes, o_nodes=dict()):
+        Parameters:
+            q_nodes (set(str)): set of nodes to get MAP estimate for
+            observations (dict(str->value)): dict mapping node name to its observed value
+        """
+        ordering = self.get_order(q_nodes, observations)
+        q_nodes_set = set(q_nodes)
+        buckets = self.bucket_elimination(q_nodes, observations, do_map=True)
+        ## Prints/displays information for debugging purposes (uncomment if needed to debug)
+        # print(ordering)
+        # print("--Post BE--")
+        # for node in ordering:
+        #     print(f'--bucket {node.upper()}--')
+        #     if buckets[node] is None:
+        #         print("*Empty*")
+        #     else:
+        #         print(buckets[node])
+        #         for func in buckets[node]:
+        #             display(func)
+        initial_node = ordering[0]
+        argmax_idx = np.argmax(buckets[ordering[0]]["prob"])
+        map_estimate = {initial_node: buckets[initial_node][initial_node].iloc[argmax_idx]}
+        for node in ordering[1:]:
+            if node not in q_nodes_set:
+                return map_estimate
+            else:
+                argmax_node = buckets[node]
+                assignment = tuple(map_estimate[node] for node in argmax_node.index.names if node in map_estimate.keys())
+                map_estimate[node] = argmax_node.loc[assignment][node]
+        return map_estimate
+
+
+    def get_posterior(self, q_nodes, observations):
         """
         Compute the posterior distribution for the query nodes given observations.
 
         Parameters:
             q_nodes (list[string]): list of string names of nodes queried nodes
-            o_nodes (dict(str->bool)): dictionary of observed string node names with respective True/False observations
+            observations (dict(str->bool)): dictionary of observed string node names with respective True/False observations
         Return:
             dictionary of most likely probabilities
         """
-        raise NotImplementedError()
+        ordering = self.get_order(q_nodes, observations)
+        funcs = self.bucket_elimination(q_nodes, observations)
+        posterior = BayesNet.bucket_product(funcs)
+        
+        # Normalize (bucket elimination returns unnormalized posterior)
+        alpha = sum(posterior.prob)
+        posterior.prob = posterior.prob.apply(lambda x: x/alpha)
+        
+        return posterior
 
 
-    def bucket_elimination(self, q_nodes, observations):
+    def bucket_elimination(self, q_nodes, observations, do_map=False):
         """
         Perform bucket elimination.
 
@@ -97,11 +141,12 @@ class BayesNet:
             q_nodes: a list of string names for query nodes
             observations: a dictionary mapping node names to observations
         """
-        # 1. (initialize buckets)
-        ordering = BayesNet.get_order(self, q_nodes, observations) # list
-        cpts = [self.nodes[node].probabilities for node in ordering]
+
+        # 1. (Initialize buckets step)
+        ordering = BayesNet.get_order(self, q_nodes, observations)
+        cpts = [get_cpt_for_bucket(node, self.nodes[node].probabilities) for node in ordering]
         buckets = dict()
-        for b in ordering:
+        for b in ordering: 
             buckets[b] = []
         # Go through each cpt function, add it to the highest ranked bucket for which the cpt includes the bucket's node
         for cpt in reversed(cpts):
@@ -109,21 +154,41 @@ class BayesNet:
                 if node in cpt.columns:
                     buckets[node].append(cpt)
                     break
+                    
+        ## Prints/displays information for debugging purposes (uncomment if needed to debug)
+        # print('--initial buckets--')
+        # for node in ordering:
+        #     print(f"--Bucket {node.upper()}--")
+        #     for func in buckets[node]:
+        #         display(func)
+        ##
+        
+        # 2. (Backwards step)
+        q_nodes_set = set(q_nodes)
+        for i, node in reversed(list(enumerate(ordering))):
 
+            ## Prints/displays information for debugging purposes (uncomment if needed to debug)
+            # print(f'--bucket {node.upper()}--')
+            # if len(buckets[node]) == 0:
+            #     print("*Empty*")
+            # for func in buckets[node]:
+            #     display(func)
+            ##
 
-        # 2. (Backwards)
-        for i, node in reversed(list(enumerate(ordering[1:]))):
-            i += 1
-#             print('node', node, 'i', i)
-#             print('ordering', ordering[:i])
+            if i == 0:
+                break
+
             # If an observation exists for the current bucket
             if node in observations.keys():
-                for j, func in enumerate(buckets[node]):
-                    buckets[node].pop(j)
+                for func in buckets[node]:
                     new_func = func[func[node] == observations[node]]
                     new_func = new_func.drop(columns=[node])
                     new_node = BayesNet.get_new_node(new_func, buckets, ordering)
                     buckets[new_node].append(new_func)
+                buckets[node]=None # Empty bucket after all funcs are moved out of it
+
+            elif node in q_nodes_set and not do_map: 
+                break
 
             else:
                 max_or_sum = max if (node in q_nodes) else sum
@@ -131,19 +196,40 @@ class BayesNet:
                 eliminated_func = BayesNet.eliminate_node(node, product_func, max_or_sum)
                 new_node = BayesNet.get_new_node(eliminated_func, buckets, ordering)
                 buckets[new_node].append(eliminated_func)
-                if max_or_sum == max:
+
+                if max_or_sum == max and do_map:
                     argmax_func = BayesNet.eliminate_node(node, product_func, np.argmax)
                     midx = pd.MultiIndex.from_frame(argmax_func[argmax_func.columns[:-1]])
-                    argmax_func = argmax_func[['prob']].set_index(midx)
-                    argmax_func.rename(columns={'prob': node}, inplace=True)
-                    argmax_func[node] = argmax_func[node].apply(lambda x: x==1)
+                    argmax_func = argmax_func[[node]].set_index(midx)
                     buckets[node] = argmax_func
+        
+        if not do_map:
+            remaining_funcs = []
+            for node in q_nodes:
+                if buckets[node]:
+                    remaining_funcs.extend(buckets[node])
 
-        final_node = ordering[0]
-        final_product = BayesNet.bucket_product(buckets[final_node])
-        buckets[final_node] = final_product
+            return remaining_funcs
 
-        return buckets
+        else:
+            final_node = ordering[0]
+            final_product = BayesNet.bucket_product(buckets[final_node])
+            buckets[final_node] = final_product
+
+            return buckets
+
+
+    @staticmethod
+    def get_cpt_for_bucket(node, cpt):
+        """Converts the cpt format used by Node.probabilities into the format used by BayesNet.bucket_elimination()"""
+        expanded_cpts = []
+        for value in (True, False):
+            cpt_copy = cpt.copy(deep=True)
+            cpt_copy.insert(0, node, value)
+            if not value:
+                cpt_copy.prob = cpt_copy.prob.apply(lambda x: 1-x)
+            expanded_cpts.append(cpt_copy)
+        return pd.concat(expanded_cpts, axis=0)
 
 
     @staticmethod
@@ -154,22 +240,25 @@ class BayesNet:
         """
         # Get set of nodes involved in all the functions
         nodes = set()
-        for func in funcs:
+        for func in funcs: 
             nodes = nodes.union(set(func.columns))
         nodes.remove('prob')
         nodes = list(nodes)
+
         # Create all permutations of node assignments
         node_values = [True, False] # Assumes binary nodes (must implement different logic to get node_values if nodes aren't binary)
         perms = set()
         for c in itertools.combinations_with_replacement(node_values, len(nodes)):
             for p in itertools.permutations(c):
                 perms.add(p)
+
         # Convert func dfs to dfs with a multiindex corresponding to node assignments
         # Only column left is 'prob' column
         mi_funcs = []
         for func in funcs:
             midx = pd.MultiIndex.from_frame(func[func.columns[:-1]])
             mi_funcs.append(func[['prob']].set_index(midx))
+
         # Compute the probability for each assignment and create new df
         rows = []
         for perm in perms:
@@ -181,28 +270,48 @@ class BayesNet:
             rows.append(list(perm)+[product])
         return pd.DataFrame(rows, columns=nodes+['prob'])
 
-    @staticmethod
+
+ @staticmethod
     def eliminate_node(node, func, elim_func):
+
         """
         Takes a function and a node to sum out of the function.
         Used by bucket elimination at each bucket after func_product() to sum out the bucket's node.
         """
+        use_argmax = elim_func == np.argmax
+        
         node_values = [True, False]
         nodes = list(func.columns)
         nodes.remove(node)
         nodes.remove('prob')
+
         # Get all permutations of node assignmnets not being summed out
         perms = []
         for perm in func[nodes].drop_duplicates().iterrows():
             perms.append(tuple(perm[1]))
+
         midx = pd.MultiIndex.from_frame(func[nodes])
         mi_func = func[[node, 'prob']].set_index(midx)
+
         rows = []
         for perm in perms:
-            probability = elim_func(mi_func.loc[perm].prob)
-            rows.append(list(perm)+[probability])
-        return pd.DataFrame(rows, columns=nodes+['prob'])
+            if not use_argmax:
+                value = elim_func(mi_func.loc[perm].prob)
+            else:
+                idx = elim_func(mi_func.loc[perm].prob)
+                value = mi_func.loc[perm][node].iloc[idx]
+            rows.append(list(perm)+[value])
+        new_func = pd.DataFrame(rows, columns=nodes+[node if use_argmax else 'prob'])
+        
+        ## Prints/displays information for debugging purposes (uncomment if needed to debug)
+        # if not use_argmax:
+        #     print("bucket product:")
+        #     display(func)
+        #     print(f"eliminated {node} with {elim_func.__name__}. New func:")
+        #     display(new_func)
+        ##
 
+        return new_func
 
     @staticmethod
     def get_new_node(func, buckets, ordering):
