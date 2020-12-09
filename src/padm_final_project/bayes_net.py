@@ -312,7 +312,7 @@ class BayesNet:
 
 
     @staticmethod
-    def argmin_of_f(f, nodes, graph):
+    def argmin_of_f(nodes, graph):
         """Returns the argmin (over nodes) of f(node, graph) """
         min_node = None
         min_score = np.infty
