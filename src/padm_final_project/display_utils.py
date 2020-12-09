@@ -9,7 +9,7 @@ def display_state(network, observations, add_newline=True):
     for node in network.nodes.values():
         node_text = node.name if node.label is None else node.label
         node_value = "?" if node.name not in observations else observations[node.name]
-        to_return += " - *{}* = {}\n".format(node_text, node_value)
+        to_return += " - {} = {}\n".format(node_text, node_value)
 
     return to_return
 
@@ -36,13 +36,13 @@ def display_MAP(network, observations, map_estimates, add_newline=True):
         node_text = node.name if node.label is None else node.label
 
         if node.name in observations:
-            node_value = "{} (Observation)".format(observations[node.name])
+            node_value = "{} *(Observation)*".format(observations[node.name])
         elif node.name in map_estimates:
-            node_value = "{} (Estimate)".format(map_estimates[node.name])
+            node_value = "{} *(Estimate)*".format(map_estimates[node.name])
         else:
             node_value = "?"
 
-        to_return += " - *{}* = {}\n".format(node_text, node_value)
+        to_return += " - {} = {}\n".format(node_text, node_value)
 
     return to_return
 
