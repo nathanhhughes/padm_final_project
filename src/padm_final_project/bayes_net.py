@@ -83,8 +83,11 @@ class BayesNet:
                 return map_estimate
             else:
                 argmax_node = buckets[node]
-                assignment = tuple(map_estimate[node] for node in argmax_node.index.names if node in map_estimate.keys())
-                map_estimate[node] = argmax_node.loc[assignment][node]
+                if len(argmax_node.columns) > 1:
+                    assignment = tuple(map_estimate[node] for node in argmax_node.index.names if node in map_estimate.keys())
+                    map_estimate[node] = argmax_node.loc[assignment][node]
+                else:
+                    map_estimate[node] = argmax_node[node][0]
         return map_estimate
 
 
@@ -175,8 +178,9 @@ class BayesNet:
 
                 if max_or_sum == max and do_map:
                     argmax_func = BayesNet.eliminate_node(node, product_func, np.argmax)
-                    midx = pd.MultiIndex.from_frame(argmax_func[argmax_func.columns[:-1]])
-                    argmax_func = argmax_func[[node]].set_index(midx)
+                    if len(argmax_func.columns) > 1:
+                        midx = pd.MultiIndex.from_frame(argmax_func[argmax_func.columns[:-1]])
+                        argmax_func = argmax_func[[node]].set_index(midx)
                     buckets[node] = argmax_func
         
         if not do_map:
@@ -277,7 +281,11 @@ class BayesNet:
             midx = pd.MultiIndex.from_frame(func[nodes])
             mi_func = func[[node, 'prob']].set_index(midx)
         else:
-            result = pd.DataFrame([sum(func.prob)], columns=['prob'])
+            if not use_argmax:
+                result = pd.DataFrame([elim_func(func.prob)], columns=['prob'])
+            else:
+                idx = elim_func(func.prob)
+                result = pd.DataFrame(func[node].iloc[idx], columns=[node])
             return result
 
         rows = []
