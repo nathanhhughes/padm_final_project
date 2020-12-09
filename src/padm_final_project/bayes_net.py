@@ -246,7 +246,7 @@ class BayesNet:
         return pd.DataFrame(rows, columns=nodes+['prob'])
 
 
- @staticmethod
+    @staticmethod
     def eliminate_node(node, func, elim_func):
 
         """
