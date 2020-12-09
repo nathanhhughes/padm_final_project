@@ -4,9 +4,6 @@
 def display_state(network, observations, add_newline=True):
     """Show observed values of the nodes of a network."""
     to_return = "" if not add_newline else "\n"
-
-    if not map_estimates:
-        map_estimates = []
     to_return += "**Observations:**\n"
 
     for node in network.nodes.values():
@@ -33,9 +30,6 @@ def display_posteriors(variables, P_variables, add_newline=True):
 def display_MAP(network, observations, map_estimates, add_newline=True):
     """Show observed values of the nodes of a network."""
     to_return = "" if not add_newline else "\n"
-
-    if not map_estimates:
-        map_estimates = []
     to_return += "**State Estimate:**\n"
 
     for node in network.nodes.values():
