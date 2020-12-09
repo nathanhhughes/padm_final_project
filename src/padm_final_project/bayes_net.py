@@ -308,7 +308,7 @@ class BayesNet:
         for node in reversed(ordering):
             if node in func.columns:
                 return node
-
+        return ordering[-1]
 
     def get_order(self, q_nodes, observations):
         """Greedy Search for constructing bucket elimination ordering"""
