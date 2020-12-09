@@ -43,7 +43,7 @@ class Node:
         self.probabilities = probabilities
 
     @classmethod
-    def from_probabilities(cls, name, parents, probabilities, label=None):
+    def from_probabilities(cls, name, probabilities, parents=None, label=None):
         """
         Construct a node directly from the conditional probability table (CPT).
 
@@ -111,7 +111,7 @@ class Node:
             # this is the inhibition, so take the inverse
             probabilities.append(1.0 - probability)
 
-        return cls.from_probabilities(name, parents, probabilities, label=label)
+        return cls.from_probabilities(name, probabilities, parents=parents, label=label)
 
     def __str__(self):
         """Show the conditional probability table."""

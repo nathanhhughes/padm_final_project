@@ -5,7 +5,7 @@ import pytest
 def test_from_probabilities():
     a = Node("a", 1.0)
     b = Node("b", 1.0)
-    test_node = Node.from_probabilities("test", [a, b], [1.0, 0.1, 0.2, 0.02])
+    test_node = Node.from_probabilities("test", [1.0, 0.1, 0.2, 0.02], parents=[a, b])
 
     # first value: a and b are false
     assert not test_node.probabilities.iloc[0]["a"]
