@@ -119,7 +119,7 @@ class BayesNet:
 
         # 1. (Initialize buckets step)
         ordering = BayesNet.get_order(self, q_nodes, observations)
-        cpts = [get_cpt_for_bucket(node, self.nodes[node].probabilities) for node in ordering]
+        cpts = [BayesNet.get_cpt_for_bucket(node, self.nodes[node].probabilities) for node in ordering]
         buckets = dict()
         for b in ordering: 
             buckets[b] = []
