@@ -105,7 +105,9 @@ def generate_random_network(n_attacks=2, n_subsystems=3, n_workstations=6, seed=
     return BayesNet(all_nodes, G)
 
 
-def generate_network(n_attacks=3, n_subsystems=5, n_workstations=5, branch=3, seed=None):
+def generate_network(
+    n_attacks=3, n_subsystems=5, n_workstations=5, branch=3, seed=None
+):
     """
     Make an example network with the number of components.
     Args:
@@ -131,7 +133,9 @@ def generate_network(n_attacks=3, n_subsystems=5, n_workstations=5, branch=3, se
     if n_workstations == 0:
         raise ValueError("Need at least one workstation!")
     if branch > n_subsystems or branch > n_attacks:
-        raise ValueError("Branching factor needs to be smaller than number of subsystems / number of attacks!")
+        raise ValueError(
+            "Branching factor needs to be smaller than number of subsystems / number of attacks!"
+        )
 
     # generate attack nodes
     attack_nodes = []
@@ -147,9 +151,7 @@ def generate_network(n_attacks=3, n_subsystems=5, n_workstations=5, branch=3, se
         G.add_node(
             "s" + str(i), pos=(graph_width * (i + 0.5) / n_subsystems, 2), color="b"
         )
-        sample_attacks = random.sample(
-            range(0, n_attacks), branch
-        )
+        sample_attacks = random.sample(range(0, n_attacks), branch)
         for j in sample_attacks:
             G.add_edge("a" + str(j), "s" + str(i))
         subsystem_nodes.append(
@@ -212,3 +214,38 @@ def generate_random_cpt(parents=[]):
             else:
                 j += 1
     return df
+
+
+def make_sample_network(num_nodes, num_extra_branches=1):
+    """Make a network with the correct number of nodes."""
+    nodes = ["n{}".format(i) for i in range(num_nodes)]
+    parents = {nodes[0]: []}
+    children = {node: [] for node in nodes}
+
+    # form a tree by grabbing a random parent before the node
+    for index, node in enumerate(nodes[1:]):
+        random_parent = np.random.randint(0, index + 1)
+        parents[node] = [nodes[random_parent]]
+        children[nodes[random_parent]].append(node)
+
+    # add extra cycles to all nodes later than the current node
+    for index, node in enumerate(nodes[:-1]):
+        potential_children = set(nodes[index + 1 :])
+        for child in children[node]:
+            potential_children.remove(child)
+
+        if len(potential_children) == 0:
+            continue
+
+        new_children = random.sample(list(potential_children), num_extra_branches)
+        for child in new_children:
+            parents[child].append(node)
+
+    bayes_nodes = {}
+    for node in nodes:
+        parent_nodes = [bayes_nodes[parent] for parent in parents[node]]
+        bayes_nodes[node] = Node(
+            node, generate_random_cpt(parents[node]), parents=parent_nodes
+        )
+
+    return BayesNet(bayes_nodes.values())
