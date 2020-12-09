@@ -101,14 +101,8 @@ def generate_random_network(n_attacks=2, n_subsystems=3, n_workstations=6, seed=
                 )
             )
 
-    dictionary_of_nodes = dict()
     all_nodes = attack_nodes + subsystem_nodes + workstation_nodes
-    for n in all_nodes:
-        dictionary_of_nodes[n.name] = n
-    return BayesNet(dictionary_of_nodes, G)
-
-
-
+    return BayesNet(all_nodes, G)
 
 
 def generate_network(n_attacks=3, n_subsystems=5, n_workstations=5, branch=3, seed=None):
@@ -186,11 +180,8 @@ def generate_network(n_attacks=3, n_subsystems=5, n_workstations=5, branch=3, se
             )
         )
 
-    dictionary_of_nodes = dict()
     all_nodes = attack_nodes + subsystem_nodes + workstation_nodes
-    for n in all_nodes:
-        dictionary_of_nodes[n.name] = n
-    return BayesNet(dictionary_of_nodes, G)
+    return BayesNet(all_nodes, G)
 
 
 def generate_random_cpt(parents=[]):

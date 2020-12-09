@@ -24,13 +24,13 @@ class BayesNet:
         Parameters:
             nodes (dict{name(str) -> node(Node)}): dict mapping each node's name to its node object.
         """
-        self.nodes = nodes
+        self.nodes = {node.name: node for node in nodes}
         if graph is not None:
             self.graph = graph
         else:
             self.graph = nx.DiGraph()
             for node in nodes:
-                self.graph.add_node( node.name, color="")
+                self.graph.add_node(node.name, color="")
                 for parent in node.parents:
                     self.graph.add_edge(parent.name, node.name)
 
