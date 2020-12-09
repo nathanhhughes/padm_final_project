@@ -160,6 +160,8 @@ class BayesNet:
             # If an observation exists for the current bucket
             if node in observations.keys():
                 for func in buckets[node]:
+                    if len(func.columns) == 1:
+                        continue
                     new_func = func[func[node] == observations[node]]
                     new_func = new_func.drop(columns=[node])
                     new_node = BayesNet.get_new_node(new_func, buckets, ordering[:i])
