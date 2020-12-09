@@ -62,7 +62,6 @@ class BayesNet:
             observations (dict(str->value)): dict mapping node name to its observed value
         """
         ordering = self.get_order(q_nodes, observations)
-        print(ordering)
         q_nodes_set = set(q_nodes)
         buckets = self.bucket_elimination(q_nodes, observations, do_map=True)
         ## Prints/displays information for debugging purposes (uncomment if needed to debug)
