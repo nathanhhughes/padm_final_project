@@ -38,7 +38,7 @@ def display_MAP(network, observations, map_estimates, add_newline=True):
         if node.name in observations:
             node_value = "{} (Observation)".format(observations[node.name])
         elif node.name in map_estimates:
-            node_value = "{} (Estimate)".format(observations[node.name])
+            node_value = "{} (Estimate)".format(map_estimates[node.name])
         else:
             node_value = "?"
 
