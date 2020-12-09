@@ -162,7 +162,7 @@ class BayesNet:
                 for func in buckets[node]:
                     new_func = func[func[node] == observations[node]]
                     new_func = new_func.drop(columns=[node])
-                    new_node = BayesNet.get_new_node(new_func, buckets, ordering)
+                    new_node = BayesNet.get_new_node(new_func, buckets, ordering[:i])
                     buckets[new_node].append(new_func)
                 buckets[node]=None # Empty bucket after all funcs are moved out of it
 
