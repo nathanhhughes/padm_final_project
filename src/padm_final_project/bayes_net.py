@@ -231,9 +231,13 @@ class BayesNet:
         # Convert func dfs to dfs with a multiindex corresponding to node assignments
         # Only column left is 'prob' column
         mi_funcs = []
+        scalars = []
         for func in funcs:
-            midx = pd.MultiIndex.from_frame(func[func.columns[:-1]])
-            mi_funcs.append(func[['prob']].set_index(midx))
+            if len(func.columns) > 1:
+                midx = pd.MultiIndex.from_frame(func[func.columns[:-1]])
+                mi_funcs.append(func[['prob']].set_index(midx))
+            else:
+                scalars.append(func)
 
         # Compute the probability for each assignment and create new df
         rows = []
@@ -244,7 +248,10 @@ class BayesNet:
                 key = tuple(assignment[node] for node in mi_func.index.names)
                 product *= mi_func.loc[key]['prob']
             rows.append(list(perm)+[product])
-        return pd.DataFrame(rows, columns=nodes+['prob'])
+        new_func = pd.DataFrame(rows, columns=nodes+['prob'])
+        for scalar in scalars:
+            new_func.prob = new_func.prob.apply(lambda x: scalar.prob*x)
+        return new_func
 
 
     @staticmethod
@@ -261,13 +268,17 @@ class BayesNet:
         nodes.remove(node)
         nodes.remove('prob')
 
-        # Get all permutations of node assignmnets not being summed out
-        perms = []
-        for perm in func[nodes].drop_duplicates().iterrows():
-            perms.append(tuple(perm[1]))
+        if nodes:
+            # Get all permutations of node assignmnets not being summed out
+            perms = []
+            for perm in func[nodes].drop_duplicates().iterrows():
+                perms.append(tuple(perm[1]))
 
-        midx = pd.MultiIndex.from_frame(func[nodes])
-        mi_func = func[[node, 'prob']].set_index(midx)
+            midx = pd.MultiIndex.from_frame(func[nodes])
+            mi_func = func[[node, 'prob']].set_index(midx)
+        else:
+            result = pd.DataFrame([sum(func.prob)], columns=['prob'])
+            return result
 
         rows = []
         for perm in perms:
