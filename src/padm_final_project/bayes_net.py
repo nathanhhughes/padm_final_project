@@ -104,11 +104,11 @@ class BayesNet:
         ordering = self.get_order(q_nodes, observations)
         funcs = self.bucket_elimination(q_nodes, observations)
         posterior = BayesNet.bucket_product(funcs)
-        
+
         # Normalize (bucket elimination returns unnormalized posterior)
         alpha = sum(posterior.prob)
         posterior.prob = posterior.prob.apply(lambda x: x/alpha)
-        
+
         return posterior
 
 
@@ -125,7 +125,7 @@ class BayesNet:
         ordering = BayesNet.get_order(self, q_nodes, observations)
         cpts = [BayesNet.get_cpt_for_bucket(node, self.nodes[node].probabilities) for node in ordering]
         buckets = dict()
-        for b in ordering: 
+        for b in ordering:
             buckets[b] = []
         # Go through each cpt function, add it to the highest ranked bucket for which the cpt includes the bucket's node
         for cpt in reversed(cpts):
@@ -133,7 +133,7 @@ class BayesNet:
                 if node in cpt.columns:
                     buckets[node].append(cpt)
                     break
-                    
+
         ## Prints/displays information for debugging purposes (uncomment if needed to debug)
         # print('--initial buckets--')
         # for node in ordering:
@@ -141,7 +141,7 @@ class BayesNet:
         #     for func in buckets[node]:
         #         display(func)
         ##
-        
+
         # 2. (Backwards step)
         q_nodes_set = set(q_nodes)
         for i, node in reversed(list(enumerate(ordering))):
@@ -166,7 +166,7 @@ class BayesNet:
                     buckets[new_node].append(new_func)
                 buckets[node]=None # Empty bucket after all funcs are moved out of it
 
-            elif node in q_nodes_set and not do_map: 
+            elif node in q_nodes_set and not do_map:
                 break
 
             else:
@@ -182,7 +182,7 @@ class BayesNet:
                         midx = pd.MultiIndex.from_frame(argmax_func[argmax_func.columns[:-1]])
                         argmax_func = argmax_func[[node]].set_index(midx)
                     buckets[node] = argmax_func
-        
+
         if not do_map:
             remaining_funcs = []
             for node in q_nodes:
@@ -220,7 +220,7 @@ class BayesNet:
         """
         # Get set of nodes involved in all the functions
         nodes = set()
-        for func in funcs: 
+        for func in funcs:
             nodes = nodes.union(set(func.columns))
         nodes.remove('prob')
         nodes = list(nodes)
@@ -266,7 +266,7 @@ class BayesNet:
         Used by bucket elimination at each bucket after func_product() to sum out the bucket's node.
         """
         use_argmax = elim_func == np.argmax
-        
+
         node_values = [True, False]
         nodes = list(func.columns)
         nodes.remove(node)
@@ -297,7 +297,7 @@ class BayesNet:
                 value = mi_func.loc[perm][node].iloc[idx]
             rows.append(list(perm)+[value])
         new_func = pd.DataFrame(rows, columns=nodes+[node if use_argmax else 'prob'])
-        
+
         ## Prints/displays information for debugging purposes (uncomment if needed to debug)
         # if not use_argmax:
         #     print("bucket product:")
