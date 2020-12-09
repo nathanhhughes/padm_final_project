@@ -4,7 +4,7 @@ import numpy as np
 import random
 
 
-class Node:
+class Node(object):
     """
     Represents a random variable in the Bayes network.
 
