@@ -170,7 +170,7 @@ class BayesNet:
                 max_or_sum = max if (node in q_nodes) else sum
                 product_func = BayesNet.bucket_product(buckets[node])
                 eliminated_func = BayesNet.eliminate_node(node, product_func, max_or_sum)
-                new_node = BayesNet.get_new_node(eliminated_func, buckets, ordering)
+                new_node = BayesNet.get_new_node(eliminated_func, buckets, ordering[:i])
                 buckets[new_node].append(eliminated_func)
 
                 if max_or_sum == max and do_map:
