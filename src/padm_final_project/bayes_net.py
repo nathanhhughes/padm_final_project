@@ -51,33 +51,8 @@ class BayesNet:
                 o_nodes[node_str] = random.random() > 0.5
         return o_nodes
 
+
     def get_MAP_estimate(self, q_nodes, observations):
-        """
-        Compute the most likely configuration of the network given the evidence.
-
-        Parameters:
-            q_nodes (set(str)): set of nodes to get MAP estimate for
-            observations (dict(str->value)): dict mapping node name to its observed value
-        """
-        ordering = self.get_order(q_nodes, observations)
-        print(ordering)
-        buckets = self.bucket_elimination(q_nodes, observations)
-        initial_node = ordering[0]
-        argmax_idx = np.argmax(buckets[ordering[0]]["prob"])
-        map_estimate = {initial_node: bool(buckets[initial_node][initial_node].iloc[argmax_idx])}
-        for node in ordering[1:]:
-            print(map_estimate)
-            if node not in q_nodes:
-                return map_estimate
-            else:
-                argmax_node = buckets[node]
-                assignment = tuple(map_estimate[node] for node in argmax_node.index.names if node in map_estimate.keys())
-                print(assignment)
-                print(argmax_node)
-                map_estimate[node] = argmax_node.loc[assignment][node]
-        return map_estimate
-
-        def get_MAP_estimate(self, q_nodes, observations):
         """
         Compute the most likely configuration of the network given the evidence.
 
