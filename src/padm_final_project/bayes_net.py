@@ -62,6 +62,7 @@ class BayesNet:
             observations (dict(str->value)): dict mapping node name to its observed value
         """
         ordering = self.get_order(q_nodes, observations)
+        print(ordering)
         q_nodes_set = set(q_nodes)
         buckets = self.bucket_elimination(q_nodes, observations, do_map=True)
         ## Prints/displays information for debugging purposes (uncomment if needed to debug)
@@ -83,7 +84,7 @@ class BayesNet:
                 return map_estimate
             else:
                 argmax_node = buckets[node]
-                if len(argmax_node.columns) > 1:
+                if isinstance(argmax_node.index, pd.MultiIndex):
                     assignment = tuple(map_estimate[node] for node in argmax_node.index.names if node in map_estimate.keys())
                     map_estimate[node] = argmax_node.loc[assignment][node]
                 else:
