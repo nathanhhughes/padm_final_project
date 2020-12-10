@@ -216,7 +216,7 @@ def generate_random_cpt(parents=[]):
     return df
 
 
-def make_sample_network(num_nodes, num_cycles=1, max_samples=10):
+def make_sample_network(num_nodes, num_extra_branches=0):
     """Make a network with the correct number of nodes."""
     nodes = ["n{}".format(i) for i in range(num_nodes)]
     parents = {nodes[0]: []}
@@ -229,8 +229,8 @@ def make_sample_network(num_nodes, num_cycles=1, max_samples=10):
         children[nodes[random_parent]].append(node)
 
     # add extra cycles to all nodes later than the current node
-    for _ in range(num_cycles):
-        for _ in range(max_samples):
+    for node in nodes[:-1]:
+        for _ in range(num_extra_branches):
             node = random.choice(nodes[:-1])
             index = nodes.index(node)
 
@@ -244,9 +244,6 @@ def make_sample_network(num_nodes, num_cycles=1, max_samples=10):
             new_child = random.choice(list(potential_children))
             parents[new_child].append(node)
             children[node].append(new_child)
-            break
-        else:
-            print("Failed to make a new cycle after {} tries".format(max_samples))
 
     bayes_nodes = {}
     for node in nodes:
