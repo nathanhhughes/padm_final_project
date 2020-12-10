@@ -7,7 +7,7 @@ import pytest
 @pytest.mark.filterwarnings("ignore")
 def test_posterior_tree_network():
     """Show the map."""
-    net = make_sample_network(10, num_extra_branches=0)
+    net = make_sample_network(10, num_cycles=5)
     observations = {'n0': False, 'n1': False, 'n3': True, 'n5': False, 'n6': False, 'n8': False, 'n9': False}
     queries = ['n4', 'n2', 'n7']
     for query in queries:
