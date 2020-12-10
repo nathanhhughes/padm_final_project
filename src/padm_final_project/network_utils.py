@@ -234,10 +234,11 @@ def make_sample_network(num_nodes, num_extra_branches=1):
         for child in children[node]:
             potential_children.remove(child)
 
-        if len(potential_children) == 0:
-            continue
+        if len(potential_children) <= num_extra_branches:
+            new_children = list(potential_children)
+        else:
+            new_children = random.sample(list(potential_children), num_extra_branches)
 
-        new_children = random.sample(list(potential_children), num_extra_branches)
         for child in new_children:
             parents[child].append(node)
 
